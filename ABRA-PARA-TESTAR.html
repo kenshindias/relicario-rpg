@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Relicário — demonstração offline</title>
+  <style>
+    :root{--bg:#0d1019;--panel:#171b29;--panel2:#202637;--edge:#34384c;--text:#ece8db;--muted:#adb0c0;--gold:#e5b968;--purple:#9a83d6;--red:#e99595;--green:#8ccd9a}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse 85% 55% at 85% 0%,#26213a 0,transparent 67%),var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;min-height:100vh}
+    button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{cursor:wait;opacity:.5} a{color:var(--gold)}
+    .shell{display:grid;grid-template-columns:275px minmax(0,1fr);min-height:100vh}
+    aside{background:#10131e;border-right:1px solid var(--edge);padding:27px 17px;display:flex;flex-direction:column;gap:18px}
+    .logo{font-family:Georgia,serif;color:var(--gold);font-size:29px;font-weight:bold;letter-spacing:1.5px}.logo small{display:block;font:10px system-ui;letter-spacing:2.3px;color:var(--muted);margin-top:-5px}
+    .section-label{font-size:11px;font-weight:700;color:#c1b8aa;letter-spacing:2px;margin:12px 7px 0}.stack{display:grid;gap:6px}
+    .mesa{width:100%;text-align:left;padding:13px;border:1px solid transparent;border-radius:11px;color:var(--text);background:transparent;display:block}
+    .mesa.active{background:#292638;border-color:#544563}.mesa:hover{background:#202436}.mesa strong{display:block;overflow:hidden;text-overflow:ellipsis}.mesa small{color:var(--muted)}
+    .btn{border:1px solid #6e6047;background:#2b2b36;color:#f0e9d8;padding:10px 14px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-weight:600;text-align:center}
+    .btn:hover{filter:brightness(1.15)}.primary{background:linear-gradient(120deg,#d6aa5f,#aa7d3d);color:#21190e;border-color:#ceaa74}.ghost{border-color:#45475b;background:#191d2a}.danger{background:#3a222c;color:#f4b7b7;border-color:#69424b}
+    .side-buttons{display:grid;gap:8px}.side-buttons .btn{width:100%}
+    .badge{padding:13px;border:1px solid #6c5b3a;border-radius:10px;background:#242216;color:var(--gold);font-size:12px;margin-top:auto}.badge span{display:block;color:#b6af9c;margin-top:5px}
+    main{padding:30px clamp(16px,4vw,62px) 65px;min-width:0;max-width:1450px;width:100%;margin:auto}.topline{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--edge);padding-bottom:20px;color:var(--muted);font-size:12px;letter-spacing:1px}.topline .state{color:var(--gold)}
+    h1,h2,h3{font-family:Georgia,serif;line-height:1.2}h1{font-size:clamp(32px,4vw,46px);margin:14px 0 10px}h2{font-size:25px}h3{font-size:19px}.intro{margin:30px 0}.intro p{color:var(--muted)}.kicker{color:var(--gold);letter-spacing:2px;font-size:11px;font-weight:800;text-transform:uppercase}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.controls{display:flex;flex-wrap:wrap;gap:9px;align-items:center}.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:24px 0}.card{background:var(--panel);border:1px solid var(--edge);border-radius:14px;padding:18px}.card span{display:block;font-size:11px;letter-spacing:1px;color:var(--muted)}.card strong{display:block;font-size:30px;color:var(--text);margin-top:6px}.card small{font-size:12px;color:var(--muted)}
+    .bag-list{display:flex;gap:9px;flex-wrap:wrap;margin:16px 0 24px}.bag{border-radius:30px;border:1px solid #484454;background:#1e2130;padding:9px 15px;color:var(--text)}.bag.active{color:var(--gold);border-color:var(--gold);background:#312b25}
+    .panel{background:var(--panel);border:1px solid var(--edge);border-radius:16px;overflow:hidden}.panelhead{padding:19px 22px;border-bottom:1px solid var(--edge)}.panel-body{padding:22px}.tabs{display:flex;gap:8px}.tabs button{border:0;border-bottom:2px solid transparent;color:var(--muted);padding:11px 16px;background:transparent}.tabs button.on{border-color:var(--gold);color:var(--gold)}
+    .filterrow{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px}.field{background:#111523;border:1px solid #454a5d;color:var(--text);border-radius:8px;padding:10px 12px;min-width:0}.filterrow input{flex:1;min-width:140px}.filterrow select{max-width:210px}
+    .item-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}.item{background:#1f2535;border:1px solid #3a4154;border-radius:12px;padding:15px;min-width:0}.item-type{font-size:11px;color:var(--gold);font-weight:bold;letter-spacing:1px}.item h3{margin:10px 0 5px;overflow-wrap:anywhere}.item p{font-size:13px;color:var(--muted);min-height:35px;white-space:pre-wrap;overflow-wrap:anywhere}.meta{display:flex;justify-content:space-between;font-size:13px;color:#ded0b2;margin:10px 0}.item .controls .btn{padding:5px 9px;font-size:12px}
+    .coin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(138px,1fr));gap:10px}.coin{background:#202534;border:1px solid #4b4a59;border-radius:12px;padding:17px}.coin label{display:block;color:var(--muted);font-size:12px}.coin strong{display:block;font-size:28px;margin:7px 0 12px;color:var(--gold)}.coin button{font-size:12px}
+    .history{margin-top:26px}.history-row{border-top:1px solid var(--edge);padding:10px 0;display:flex;justify-content:space-between;gap:14px}.history-row small{color:var(--muted)}.positive{color:var(--green)}.negative{color:var(--red)}
+    .empty{padding:35px 14px;text-align:center;border:1px dashed #545268;border-radius:12px;color:var(--muted)}.notice{background:#352b1f;border:1px solid #755e3b;padding:13px 16px;border-radius:10px;margin:16px 0;color:#ffdd9b;font-size:13px}
+    dialog{background:#191d2b;color:var(--text);border:1px solid #615676;border-radius:15px;width:min(520px,calc(100vw - 25px));padding:26px;box-shadow:0 22px 100px #000a}dialog::backdrop{background:#000b;backdrop-filter:blur(3px)}dialog h2{margin:0 0 6px}dialog p{color:var(--muted)}.form{display:grid;gap:13px;margin-top:20px}.form label{display:grid;gap:6px;font-size:13px;color:#ddd0b9}.form .field{width:100%}.form textarea{min-height:80px;resize:vertical}.form-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:9px}
+    .toast{position:fixed;bottom:20px;right:18px;background:#2b3427;border:1px solid #607355;color:#ecfbdc;padding:11px 16px;border-radius:10px;box-shadow:0 10px 40px #0006;display:none;z-index:50;max-width:min(420px,90vw)}.toast.show{display:block}
+    @media(max-width:740px){.shell{display:block}aside{padding:14px;gap:8px;border-right:0;border-bottom:1px solid var(--edge)}.logo{font-size:23px}.logo small{font-size:9px}.side-buttons{grid-template-columns:1fr 1fr}.mesa-list{display:flex;overflow:auto;gap:5px}.mesa{min-width:135px}.section-label{margin-top:4px}.badge{display:none}main{padding:15px 14px 40px}.cards{grid-template-columns:1fr 1fr}.card:last-child{grid-column:1/-1}.card{padding:13px}.card strong{font-size:23px}.panel-body{padding:12px}.panelhead{padding:14px}.intro{margin-top:15px}.item-grid{grid-template-columns:1fr}}
+    @media(prefers-reduced-motion:no-preference){.btn,.bag,.mesa{transition:filter .15s,background .15s}}
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside>
+    <div class="logo">✧ RELICÁRIO <small>INVENTÁRIO DE AVENTURAS</small></div>
+    <div class="section-label">SUAS MESAS</div>
+    <div id="mesa-list" class="stack mesa-list"></div>
+    <div class="side-buttons"><button class="btn primary" data-action="new-mesa">＋ Nova mesa</button><button class="btn ghost" data-action="import">↥ Importar backup</button></div>
+    <div class="badge">✦ DEMONSTRAÇÃO OFFLINE <span>Sem instalação. Os dados são salvos apenas neste navegador, e não são compartilhados pela internet.</span></div>
+  </aside>
+  <main>
+    <div class="topline"><span>SEU ESPAÇO / RELICÁRIO</span><span class="state">● MODO LOCAL</span></div>
+    <div class="notice" id="storage-notice">Esta é uma prévia que abre com dois cliques. Para compartilhar inventários com amigos, utilize a versão React publicada no GitHub Pages com Supabase.</div>
+    <div id="app"></div>
+  </main>
+</div>
+<dialog id="dialog"><h2 id="dialog-title"></h2><p id="dialog-help"></p><form id="form" class="form"></form></dialog>
+<input type="file" id="import-file" accept="application/json,.json" hidden>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+(() => {
+  const KEY = 'relicario_offline_demo_v2';
+  const categories = ['Armas','Armaduras','Equipamentos','Consumíveis','Magia','Componentes','Tesouros','Outros'];
+  const coins = [ ['pc','Cobre'], ['pp','Prata'], ['pe','Electro'], ['po','Ouro'], ['pl','Platina'] ];
+  const $ = id => document.getElementById(id);
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const uid = () => (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const money = n => Number(n||0).toLocaleString('pt-BR',{maximumFractionDigits:2});
+  const now = () => new Date().toISOString();
+  const seed = () => ({
+    mesas:[{id:'eldoria',name:'Crônicas de Eldoria',system:'D&D 5ª edição'}],
+    bags:[{id:'bau',mesaId:'eldoria',name:'Baú do grupo',kind:'grupo'},{id:'kael',mesaId:'eldoria',name:'Bolsa de Kael',kind:'personagem'}],
+    items:[{id:'i1',bagId:'bau',name:'Rubi de Sangue',category:'Tesouros',quantity:2,value:250,notes:'Encontrado na cripta do rei.'},{id:'i2',bagId:'bau',name:'Poção de Cura',category:'Consumíveis',quantity:4,value:50,notes:'Cura 2d4+2 pontos de vida.'},{id:'i3',bagId:'kael',name:'Espada Longa +1',category:'Armas',quantity:1,value:500,notes:'Arma encantada.'}],
+    wallets:{bau:{pc:35,pp:12,pe:0,po:324,pl:3},kael:{pc:0,pp:4,pe:0,po:24,pl:0}},history:[]
+  });
+  let storageOK = true;
+  let db;
+  try { const raw = localStorage.getItem(KEY); db = raw ? JSON.parse(raw) : seed(); if(!raw)localStorage.setItem(KEY,JSON.stringify(db)); }
+  catch(err){storageOK=false;db=seed();}
+  const save = () => {if(!storageOK)return;try{localStorage.setItem(KEY,JSON.stringify(db))}catch(err){storageOK=false;noticeStorage()}};
+  const noticeStorage=()=>{$('storage-notice').textContent='Seu navegador bloqueou o armazenamento local deste arquivo. As alterações funcionarão nesta sessão, mas poderão desaparecer ao fechar a página. Use o Chrome ou Edge em modo normal.'};
+  if(!storageOK)noticeStorage();
+  let mesaId=db.mesas[0]?.id||null, bagId=null, tab='items', category='Todas', search='';
+  let toastTimeout;
+  function notify(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>t.classList.remove('show'),3500)}
+  function selectedMesa(){return db.mesas.find(x=>x.id===mesaId)}
+  function selectedBags(){return db.bags.filter(x=>x.mesaId===mesaId)}
+  function selectedBag(){return db.bags.find(x=>x.id===bagId)}
+  function ensureSelection(){if(!selectedMesa())mesaId=db.mesas[0]?.id||null;if(!selectedBags().some(b=>b.id===bagId))bagId=selectedBags()[0]?.id||null}
+  function render(){
+    ensureSelection();
+    $('mesa-list').innerHTML=db.mesas.length?db.mesas.map(m=>`<button class="mesa ${m.id===mesaId?'active':''}" data-action="select-mesa" data-id="${esc(m.id)}"><strong>📜 ${esc(m.name)}</strong><small>${esc(m.system)}</small></button>`).join(''):'<div class="empty">Sem mesas</div>';
+    const mesa=selectedMesa();
+    if(!mesa){$('app').innerHTML=`<section class="intro"><span class="kicker">Sua primeira aventura</span><h1>Todo tesouro começa com uma história.</h1><p>Crie uma mesa para guardar os itens de seus personagens.</p><button class="btn primary" data-action="new-mesa">＋ Criar mesa</button></section>`;return;}
+    const b=selectedBag();
+    const items=db.items.filter(i=>i.bagId===bagId);
+    const wallet=db.wallets[bagId]||{};
+    const valMoney=(Number(wallet.pc||0)+10*Number(wallet.pp||0)+50*Number(wallet.pe||0)+100*Number(wallet.po||0)+1000*Number(wallet.pl||0))/100;
+    const totalValue=items.reduce((s,i)=>s+Number(i.value||0)*Number(i.quantity||0),0);
+    $('app').innerHTML=`
+      <section class="intro"><span class="kicker">SUA CAMPANHA · ${esc(mesa.system)}</span><div class="row"><div><h1>${esc(mesa.name)}</h1><p>Itens, tesouros e moedas guardados em um só lugar.</p></div><div class="controls"><button class="btn ghost" data-action="backup">↓ Exportar backup</button><button class="btn danger" data-action="delete-mesa">Excluir mesa</button></div></div></section>
+      <div class="cards"><div class="card"><span>ITENS NA BOLSA</span><strong>${money(items.reduce((s,i)=>s+Number(i.quantity||0),0))}</strong><small>Total de unidades</small></div><div class="card"><span>MOEDAS</span><strong>${money(valMoney)} PO</strong><small>Equivalente em ouro</small></div><div class="card"><span>VALOR DOS ITENS</span><strong>${money(totalValue)} PO</strong><small>Valor estimado</small></div></div>
+      <div class="row"><h2>Bolsas & inventários</h2><button class="btn ghost" data-action="new-bag">＋ Nova bolsa</button></div>
+      <div class="bag-list">${selectedBags().map(b=>`<button class="bag ${bagId===b.id?'active':''}" data-action="select-bag" data-id="${esc(b.id)}">${b.kind==='grupo'?'♜':'◈'} ${esc(b.name)}</button>`).join('')}</div>
+      ${b?`<section class="panel"><div class="panelhead row"><div><span class="kicker">${b.kind==='grupo'?'BOLSA DO GRUPO':'BOLSA DO PERSONAGEM'}</span><h2 style="margin:6px 0">${esc(b.name)}</h2></div><div class="controls"><button class="btn danger" data-action="delete-bag">Excluir bolsa</button></div></div>
+        <div class="panelhead row"><div class="tabs"><button data-action="tab-items" class="${tab==='items'?'on':''}">🎒 Inventário</button><button data-action="tab-coins" class="${tab==='coins'?'on':''}">🪙 Moedas</button></div><button class="btn primary" data-action="${tab==='items'?'new-item':'new-money'}">＋ ${tab==='items'?'Adicionar item':'Movimentar moedas'}</button></div>
+        <div class="panel-body">${tab==='items'?itemSection(items):coinSection(wallet)}</div></section>`:'<div class="empty">Crie sua primeira bolsa para começar.</div>'}`;
+  }
+  function itemSection(items){
+    const shown=items.filter(i=>(category==='Todas'||category===i.category)&&(`${i.name} ${i.notes||''}`).toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR')));
+    return `<div class="filterrow"><input class="field" id="search" placeholder="Buscar itens por nome ou descrição" value="${esc(search)}"><select class="field" id="category"><option value="Todas">Todas as categorias</option>${categories.map(c=>`<option ${category===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div><div id="item-results">${itemCards(shown)}</div>`;
+  }
+  function itemCards(items){return items.length?`<div class="item-grid">${items.map(i=>`<article class="item"><div class="item-type">${esc(i.category).toUpperCase()}</div><h3>${esc(i.name)}</h3><p>${esc(i.notes||'Sem descrição')}</p><div class="meta"><span>Qtd.: ${money(i.quantity)}</span><span>${money(i.value)} PO/un.</span></div><div class="controls"><button class="btn ghost" data-action="edit-item" data-id="${esc(i.id)}">✎ Editar</button><button class="btn danger" data-action="delete-item" data-id="${esc(i.id)}">Excluir</button></div></article>`).join('')}</div>`:'<div class="empty">Nenhum item nesta categoria. Adicione um novo tesouro!</div>'}
+  function coinSection(wallet){const history=db.history.filter(h=>h.bagId===bagId).slice(-12).reverse();return `<div class="coin-grid">${coins.map(([code,name])=>`<div class="coin"><label>${esc(name)} · ${code.toUpperCase()}</label><strong>${money(wallet[code]||0)}</strong><button class="btn ghost" data-action="new-money" data-coin="${code}">＋ Movimentar</button></div>`).join('')}</div><div class="history"><h3>Últimas movimentações</h3>${history.length?history.map(h=>`<div class="history-row"><div><strong>${esc(h.note||'Movimentação')}</strong><br><small>${esc(new Date(h.date).toLocaleString('pt-BR'))}</small></div><strong class="${h.delta>0?'positive':'negative'}">${h.delta>0?'+':''}${money(h.delta)} ${esc(h.coin.toUpperCase())}</strong></div>`).join(''):'<p style="color:var(--muted)">Ainda não há movimentações.</p>'}</div>`}
+  function updateItemsOnly(){const items=db.items.filter(i=>i.bagId===bagId&&(category==='Todas'||category===i.category)&&(`${i.name} ${i.notes||''}`).toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR')));if($('item-results'))$('item-results').innerHTML=itemCards(items)}
+  function dialog(title,help,fields,onSubmit){$('dialog-title').textContent=title;$('dialog-help').textContent=help;$('form').innerHTML=fields+`<div class="form-actions"><button class="btn ghost" value="cancel" type="button" id="cancel">Cancelar</button><button class="btn primary" type="submit">Salvar</button></div>`;const d=$('dialog');$('cancel').onclick=()=>d.close();$('form').onsubmit=e=>{e.preventDefault();try{onSubmit(new FormData($('form')));save();d.close();render();notify('Alteração salva!')}catch(err){notify(err.message)}};d.showModal();$('form').querySelector('input,select')?.focus()}
+  const field=(name,label,value='',type='text',extras='')=>`<label>${label}<input class="field" name="${name}" type="${type}" value="${esc(value)}" ${extras} ${name==='note'?'':'required'}></label>`;
+  const selectField=(name,label,values,current)=>`<label>${label}<select class="field" name="${name}">${values.map(([v,display])=>`<option value="${esc(v)}" ${v===current?'selected':''}>${esc(display)}</option>`).join('')}</select></label>`;
+  function saveItem(id){const old=id?db.items.find(i=>i.id===id):null;dialog(id?'Editar item':'Guardar item','Cadastre a descoberta na bolsa selecionada.',field('name','Nome',old?.name||'','text','maxlength="120"')+selectField('category','Categoria',categories.map(c=>[c,c]),old?.category||'Equipamentos')+field('quantity','Quantidade',old?.quantity||1,'number','min="1" max="1000000" step="1"')+field('value','Valor por unidade (PO)',old?.value||0,'number','min="0" step="0.01"')+`<label>Descrição / observações<textarea class="field" name="notes" maxlength="2000">${esc(old?.notes||'')}</textarea></label>`,f=>{const name=String(f.get('name')).trim(),q=Number(f.get('quantity')),v=Number(f.get('value'));if(!name||!Number.isInteger(q)||q<1||!Number.isFinite(v)||v<0)throw Error('Verifique os valores do item.');const entry={id:id||uid(),bagId,name,category:f.get('category'),quantity:q,value:v,notes:String(f.get('notes')).trim()};if(old)Object.assign(old,entry);else db.items.push(entry)})}
+  function createMesa(){dialog('Criar nova mesa','Uma mesa mantém seus inventários separados.',field('name','Nome da mesa','','text','maxlength="80"')+field('system','Sistema de RPG','D&D 5ª edição','text','maxlength="60"'),f=>{const name=String(f.get('name')).trim();if(name.length<2)throw Error('Informe um nome válido.');mesaId=uid();bagId=uid();db.mesas.push({id:mesaId,name,system:String(f.get('system')).trim()});db.bags.push({id:bagId,mesaId,name:'Baú do grupo',kind:'grupo'});db.wallets[bagId]={pc:0,pp:0,pe:0,po:0,pl:0}})}
+  function createBag(){dialog('Nova bolsa','Crie uma mochila de personagem ou um baú coletivo.',field('name','Nome da bolsa','','text','maxlength="80"')+selectField('kind','Tipo',[['personagem','Personagem'],['grupo','Baú do grupo']],'personagem'),f=>{const name=String(f.get('name')).trim();if(!name)throw Error('Informe um nome.');bagId=uid();db.bags.push({id:bagId,mesaId,name,kind:f.get('kind')});db.wallets[bagId]={pc:0,pp:0,pe:0,po:0,pl:0}})}
+  function moveMoney(defaultCoin='po'){dialog('Movimentar moedas','Registre entradas ou saídas da bolsa.',selectField('coin','Tipo de moeda',coins.map(([code,label])=>[code,label]),defaultCoin)+selectField('direction','Operação',[['add','Adicionar'],['remove','Retirar']],'add')+field('amount','Quantidade',1,'number','min="1" step="1"')+field('note','Motivo (opcional)','','text','maxlength="250"'),f=>{const coin=f.get('coin'),n=Number(f.get('amount')),delta=f.get('direction')==='add'?n:-n;if(!coins.some(c=>c[0]===coin)||!Number.isInteger(n)||n<=0)throw Error('Quantidade inválida.');if(!db.wallets[bagId])db.wallets[bagId]={pc:0,pp:0,pe:0,po:0,pl:0};if(Number(db.wallets[bagId][coin]||0)+delta<0)throw Error('Saldo insuficiente.');db.wallets[bagId][coin]=Number(db.wallets[bagId][coin]||0)+delta;db.history.push({id:uid(),bagId,coin,delta,note:String(f.get('note')).trim(),date:now()})})}
+  function downloadBackup(){const contents=JSON.stringify({app:'Relicario Offline',version:2,data:db},null,2);const url=URL.createObjectURL(new Blob([contents],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`relicario-backup-${new Date().toISOString().slice(0,10)}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);notify('Backup exportado!')}
+  $('import-file').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{const result=JSON.parse(await file.text());const data=result.data;if(result.app!=='Relicario Offline'||!data||!Array.isArray(data.mesas)||!Array.isArray(data.bags)||!Array.isArray(data.items)||!data.wallets||!Array.isArray(data.history))throw Error('Este arquivo não é um backup do Relicário Offline.');if(confirm('Importar backup? Isso substituirá todos os dados da demonstração atual.')){db=data;mesaId=db.mesas[0]?.id||null;bagId=null;save();render();notify('Backup importado!')}}catch(err){notify('Erro ao importar: '+err.message)}finally{e.target.value=''}});
+  document.addEventListener('input',e=>{if(e.target.id==='search'){search=e.target.value;updateItemsOnly()}});
+  document.addEventListener('change',e=>{if(e.target.id==='category'){category=e.target.value;updateItemsOnly()}});
+  document.addEventListener('click',e=>{const btn=e.target.closest('[data-action]');if(!btn)return;const id=btn.dataset.id;switch(btn.dataset.action){
+    case 'new-mesa':createMesa();break;case 'new-bag':createBag();break;
+    case 'select-mesa':mesaId=id;bagId=null;tab='items';category='Todas';search='';render();break;
+    case 'select-bag':bagId=id;tab='items';category='Todas';search='';render();break;
+    case 'tab-items':tab='items';render();break;case 'tab-coins':tab='coins';render();break;
+    case 'new-item':saveItem();break;case 'edit-item':saveItem(id);break;
+    case 'new-money':moveMoney(btn.dataset.coin||'po');break;
+    case 'delete-item':{const i=db.items.find(x=>x.id===id);if(i&&confirm(`Excluir "${i.name}"?`)){db.items=db.items.filter(x=>x.id!==id);save();render();notify('Item excluído.')}break}
+    case 'delete-bag':{const b=selectedBag();if(b&&confirm(`Excluir a bolsa "${b.name}" e todo seu conteúdo?`)){db.bags=db.bags.filter(x=>x.id!==bagId);db.items=db.items.filter(x=>x.bagId!==bagId);db.history=db.history.filter(x=>x.bagId!==bagId);delete db.wallets[bagId];bagId=null;save();render();notify('Bolsa excluída.')}break}
+    case 'delete-mesa':{const m=selectedMesa();if(m&&confirm(`Excluir a mesa "${m.name}" e TODAS as suas bolsas?`)){const ids=new Set(selectedBags().map(x=>x.id));db.items=db.items.filter(x=>!ids.has(x.bagId));db.history=db.history.filter(x=>!ids.has(x.bagId));ids.forEach(x=>delete db.wallets[x]);db.bags=db.bags.filter(x=>x.mesaId!==mesaId);db.mesas=db.mesas.filter(x=>x.id!==mesaId);mesaId=null;bagId=null;save();render();notify('Mesa excluída.')}break}
+    case 'backup':downloadBackup();break;case 'import':$('import-file').click();break;
+  }});
+  render();
+})();
+</script>
+</body>
+</html>

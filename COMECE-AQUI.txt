@@ -1,0 +1,21 @@
+RELICARIO - LEIA PRIMEIRO
+========================
+
+PARA VER O APP AGORA, SEM INSTALAR NADA:
+1. Extraia todos os arquivos do ZIP para uma pasta.
+2. Abra o arquivo ABRA-PARA-TESTAR.html com dois cliques.
+3. Use Nova mesa, Nova bolsa e Adicionar item para testar.
+4. Seus dados da demonstracao ficam somente no navegador.
+
+PARA TESTAR O APP REACT COMPLETO NO WINDOWS:
+1. Instale Node.js: https://nodejs.org/
+2. Extraia os arquivos.
+3. Execute INICIAR-APP-NO-WINDOWS.bat.
+4. Abra http://localhost:5173 no navegador.
+
+PARA PUBLICAR PARA SEUS AMIGOS:
+Leia README.md. O GitHub Pages hospeda o app React compilado
+pelo GitHub Actions, e o Supabase armazena os dados compartilhados.
+
+NAO ABRA O index.html DIRETAMENTE. Esse arquivo depende do Vite.
+Use ABRA-PARA-TESTAR.html para uma demonstracao sem instalacao.
