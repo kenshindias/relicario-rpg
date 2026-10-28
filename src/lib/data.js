@@ -124,6 +124,27 @@ export const api = {
     if (isDemo) return mutate(db => { db.items = db.items.filter(i => i.id !== id) })
     return unwrap(await supabase.from('items').delete().eq('id', id))
   },
+  async transferItem(itemId, targetBagId, quantity) {
+    if (isDemo) return mutate(db => {
+      const source = db.items.find(i => i.id === itemId)
+      if (!source) throw new Error('Item não encontrado. Atualize o inventário.')
+      const origin = db.bags.find(b => b.id === source.bag_id)
+      const target = db.bags.find(b => b.id === targetBagId)
+      if (!origin || !target || origin.mesa_id !== target.mesa_id || origin.id === target.id || origin.kind === target.kind) throw new Error('Só é possível transferir entre baú do grupo e bolsa de personagem da mesma mesa.')
+      const amount = Number(quantity)
+      if (!Number.isSafeInteger(amount) || amount < 1 || amount > source.quantity) throw new Error('Quantidade indisponível nesta bolsa.')
+      const other = db.items.find(i => i.bag_id === targetBagId && i.name === source.name && i.category === source.category && Number(i.value_po) === Number(source.value_po) && i.notes === source.notes && i.quantity + amount <= 1000000)
+      if (other) { other.quantity += amount; other.updated_at = when() }
+      else if (amount === source.quantity) { source.bag_id = targetBagId; source.updated_at = when() }
+      else db.items.push({ ...source, id: uid(), bag_id: targetBagId, quantity: amount, created_at: when(), updated_at: when() })
+      if (other || amount < source.quantity) {
+        if (amount === source.quantity) db.items = db.items.filter(i => i.id !== itemId)
+        else { source.quantity -= amount; source.updated_at = when() }
+      }
+      return true
+    })
+    return unwrap(await supabase.rpc('transfer_item', { p_item_id: itemId, p_target_bag_id: targetBagId, p_quantity: Number(quantity) }))
+  },
   async getCoins(bagId) {
     if (isDemo) return getDemo().coins[bagId] || { bag_id: bagId, pc: 0, pp: 0, pe: 0, po: 0, pl: 0 }
     return unwrap(await supabase.from('bag_coins').select('*').eq('bag_id', bagId).single())
