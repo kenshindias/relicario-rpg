@@ -159,6 +159,75 @@ export const api = {
     })
     return unwrap(await supabase.rpc('adjust_coins', { p_bag_id: bagId, p_coin: coin, p_delta: delta, p_note: note }))
   },
+  async getSpellbook(bagId) {
+    if (isDemo) {
+      const db = getDemo()
+      return { book: (db.spellbooks || {})[bagId] || null, spells: (db.spells || []).filter(s=>s.bag_id===bagId).sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name)), usage: (db.spellUsage||[]).filter(u=>u.bag_id===bagId).slice(0,15) }
+    }
+    const [book, spells, usage] = await Promise.all([
+      supabase.from('spellbooks').select('*').eq('bag_id',bagId).maybeSingle(),
+      supabase.from('spells').select('*').eq('bag_id',bagId).order('level').order('name'),
+      supabase.from('spell_material_usage').select('*').eq('bag_id',bagId).order('created_at',{ascending:false}).limit(15),
+    ])
+    return {book:unwrap(book),spells:unwrap(spells),usage:unwrap(usage)}
+  },
+  async toggleSpellbook(bagId,enabled) {
+    if (isDemo) return mutate(db=>{
+      db.spellbooks ||= {}; db.spellbooks[bagId]={bag_id:bagId,enabled,slots:db.spellbooks[bagId]?.slots||{}}; return enabled
+    })
+    return unwrap(await supabase.rpc('toggle_spellbook',{p_bag_id:bagId,p_enabled:enabled}))
+  },
+  async saveSpell(bagId,payload,id) {
+    if (isDemo) return mutate(db=>{
+      db.spells ||= []
+      const next={...payload,id:id||uid(),bag_id:bagId,created_at:when(),updated_at:when()}
+      const i=db.spells.findIndex(s=>s.id===id)
+      if(i<0) db.spells.push(next); else db.spells[i]={...db.spells[i],...next}
+      return next.id
+    })
+    return unwrap(await supabase.rpc('save_spell',{p_bag_id:bagId,p_payload:payload,p_spell_id:id||null}))
+  },
+  async deleteSpell(id) {
+    if (isDemo) return mutate(db=>{db.spells=(db.spells||[]).filter(s=>s.id!==id);return true})
+    return unwrap(await supabase.rpc('delete_spell',{p_spell_id:id}))
+  },
+  async prepareSpell(id,prepared) {
+    if (isDemo) return mutate(db=>{const s=(db.spells||[]).find(x=>x.id===id);if(s)s.prepared=prepared;return prepared})
+    return unwrap(await supabase.rpc('set_spell_prepared',{p_spell_id:id,p_prepared:prepared}))
+  },
+  async setSpellSlots(bagId,level,total,used) {
+    if (isDemo) return mutate(db=>{
+      db.spellbooks ||= {}; db.spellbooks[bagId] ||= {bag_id:bagId,enabled:true,slots:{}}
+      db.spellbooks[bagId].slots[level]={total,used};return db.spellbooks[bagId].slots
+    })
+    return unwrap(await supabase.rpc('set_spell_slots',{p_bag_id:bagId,p_level:level,p_total:total,p_used:used}))
+  },
+  async consumeSpellMaterials(spellId) {
+    if (isDemo) return mutate(db=>{
+      const spell=(db.spells||[]).find(s=>s.id===spellId)
+      if(!spell)throw Error('Magia não encontrada')
+      const consumed=(spell.materials||[]).filter(x=>x.consumed)
+      if(!consumed.length)throw Error('A magia não possui materiais consumíveis')
+      const totals={}
+      for(const mat of consumed){
+        if(!mat.item_id)throw Error(`Vincule o componente ${mat.name} antes de consumir`)
+        totals[mat.item_id]=(totals[mat.item_id]||0)+Number(mat.quantity)
+      }
+      for(const [id,count] of Object.entries(totals)){
+        const item=db.items.find(i=>i.id===id&&i.bag_id===spell.bag_id)
+        if(!item||item.quantity<count)throw Error('Materiais insuficientes na mochila')
+      }
+      db.spellUsage ||= []
+      for(const [id,count] of Object.entries(totals)){
+        const item=db.items.find(i=>i.id===id)
+        db.spellUsage.unshift({id:uid(),bag_id:spell.bag_id,spell_name:spell.name,item_name:item.name,quantity:count,created_at:when()})
+        item.quantity-=count
+      }
+      db.items=db.items.filter(i=>i.quantity>0)
+      return Object.values(totals).reduce((a,b)=>a+b,0)
+    })
+    return unwrap(await supabase.rpc('consume_spell_materials',{p_spell_id:spellId}))
+  },
   async getMoves(bagId) {
     if (isDemo) return getDemo().moves.filter(m => m.bag_id === bagId).slice(0, 12)
     return unwrap(await supabase.from('coin_moves').select('*').eq('bag_id', bagId).order('created_at', { ascending: false }).limit(12))
