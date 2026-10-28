@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  Archive, ArrowDownLeft, ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check,
+  Archive, ArrowDownLeft, ArrowLeft, ArrowLeftRight, ArrowRight, ArrowUpRight, BookOpen, Check,
   ChevronDown, Coins, Copy, Crown, Gem, Hammer, KeyRound, LogOut, Menu,
   Package, Pencil, Plus, RefreshCw, ScrollText, Search, Shield, ShieldCheck,
   Sparkles, Sword, Trash2, Users, Wallet, X,
@@ -22,6 +22,7 @@ const formatMoney = n => new Intl.NumberFormat('pt-BR', { minimumFractionDigits:
 const moneyValue = w => (Number(w.pc || 0) + 10 * Number(w.pp || 0) + 50 * Number(w.pe || 0) + 100 * Number(w.po || 0) + 1000 * Number(w.pl || 0)) / 100
 const humanError = e => {
   const message = e?.message || String(e)
+  if (message.includes('Could not find the function public.transfer_item') || message.includes('function public.transfer_item') || message.includes('PGRST202')) return 'Falta aplicar a atualização de transferências no SQL Editor do Supabase.'
   if (message.includes('Invalid login credentials')) return 'E-mail ou senha incorretos.'
   if (message.includes('Email not confirmed')) return 'Confirme seu e-mail para entrar.'
   if (message.includes('User already registered')) return 'Este e-mail já está cadastrado.'
@@ -109,6 +110,9 @@ function App() {
   const selectedBag = bags.find(x => x.id === bagId)
   const master = selectedMesa?.owner_id === user?.id
   const canEdit = !!selectedBag && (master || selectedBag.kind === 'grupo' || selectedBag.owner_id === user?.id)
+  // Somente transfers entre baú coletivo e bolsa de personagem editável.
+  const transferTargets = bags.filter(b => b.id !== bagId && b.kind !== selectedBag?.kind &&
+    (master || b.kind === 'grupo' || b.owner_id === user?.id))
 
   const notify = useCallback(message => setToast(message), [])
   useEffect(() => { if (!toast) return; const id = setTimeout(()=>setToast(''), 3500); return ()=>clearTimeout(id) }, [toast])
@@ -243,11 +247,11 @@ function App() {
               <div className="category-pills">{['Todas', ...CATEGORIES].map(c=><button key={c} className={category===c?'on':''} onClick={()=>setCategory(c)}>{c}</button>)}</div>
               {loading ? <div className="content-empty">Carregando os tesouros...</div> : filteredItems.length ? <div className="item-grid">{filteredItems.map(item=>{
                 const Icon = CAT_ICONS[item.category] || Package
-                return <div key={item.id} className="item-card"><div className="item-top"><div className={`item-glyph glyph-${item.category.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}`}><Icon size={24}/></div><span className="qty-chip">×{formatNum(item.quantity)}</span></div><span className="item-category">{item.category}</span><h3>{item.name}</h3><p>{item.notes || 'Sem observações adicionadas.'}</p><div className="item-footer"><span className="item-value"><Coins size={15}/> {formatMoney(item.value_po)} PO <small>/ un.</small></span>{canEdit && <div className="item-actions"><button className="icon-button" title="Editar" aria-label={`Editar ${item.name}`} onClick={()=>setModal({type:'item',item})}><Pencil size={16}/></button><button className="icon-button danger-muted" title="Excluir" aria-label={`Excluir ${item.name}`} onClick={()=>deleteItem(item)}><Trash2 size={16}/></button></div>}</div></div>
+                return <div key={item.id} className="item-card"><div className="item-top"><div className={`item-glyph glyph-${item.category.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}`}><Icon size={24}/></div><span className="qty-chip">×{formatNum(item.quantity)}</span></div><span className="item-category">{item.category}</span><h3>{item.name}</h3><p>{item.notes || 'Sem observações adicionadas.'}</p><div className="item-footer"><span className="item-value"><Coins size={15}/> {formatMoney(item.value_po)} PO <small>/ un.</small></span>{canEdit && <div className="item-actions">{transferTargets.length > 0 && <button className="transfer-button" title={`Transferir ${item.name} para outra bolsa`} aria-label={`Transferir ${item.name}`} onClick={()=>setModal({type:'transfer',item,sourceBag:selectedBag,targets:transferTargets})}><ArrowLeftRight size={15}/> Transferir</button>}<button className="icon-button" title="Editar" aria-label={`Editar ${item.name}`} onClick={()=>setModal({type:'item',item})}><Pencil size={16}/></button><button className="icon-button danger-muted" title="Excluir" aria-label={`Excluir ${item.name}`} onClick={()=>deleteItem(item)}><Trash2 size={16}/></button></div>}</div></div>
               })}</div> : <div className="content-empty"><Package size={32}/><h3>Nenhum item encontrado</h3><p>{items.length ? 'Experimente outra busca ou categoria.' : 'Sua jornada está pronta para receber o primeiro tesouro.'}</p>{canEdit && !items.length && <button className="btn btn-outline" onClick={()=>setModal({type:'item',item:null})}><Plus size={16}/> Adicionar primeiro item</button>}</div>}
             </div> : <div className="coin-content"><div className="wallet-head"><div><div className="eyebrow">CARTEIRA DA BOLSA</div><h3>Suas moedas</h3><p>Cada valor é registrado separadamente.</p></div><div className="wallet-total"><span>SALDO EQUIVALENTE</span><strong>{formatMoney(moneyValue(wallet))} <small>PO</small></strong></div></div><div className="coin-grid">{COINS.map(c=><div key={c.key} className={`coin-card ${c.className}`}><div className="coin-circle"><Coins size={25}/></div><span className="coin-label">{c.label} <small>{c.abbr}</small></span><strong>{formatNum(wallet[c.key])}</strong>{canEdit && <button className="coin-adjust" onClick={()=>setModal({type:'coins',coin:c.key})}><Plus size={15}/> Movimentar</button>}</div>)}</div><div className="history"><div className="history-title"><ScrollText size={20}/><h3>Últimas movimentações</h3></div>{moves.length ? <div className="history-list">{moves.map(m=><div className="history-row" key={m.id}><div className={`history-direction ${m.delta>0?'plus':'minus'}`}>{m.delta>0 ? <ArrowDownLeft size={18}/> : <ArrowUpRight size={18}/>}</div><div className="history-description"><strong>{m.note || (m.delta>0?'Moedas adicionadas':'Moedas retiradas')}</strong><small>{new Date(m.created_at).toLocaleString('pt-BR')}</small></div><strong className={m.delta>0?'positive':'negative'}>{m.delta>0?'+':''}{formatNum(m.delta)} {m.coin.toUpperCase()}</strong></div>)}</div> : <div className="no-history">Nenhuma movimentação registrada ainda.</div>}</div></div>}
           </div> : <div className="content-empty"><Archive size={30}/><h3>Nenhuma bolsa selecionada</h3><button className="btn btn-primary" onClick={()=>setModal({type:'createBag'})}>Criar bolsa</button></div>}
-          <div className="footer-note"><ShieldCheck size={15}/> {isDemo ? 'Modo de teste: alterações salvas apenas neste navegador.' : 'Os dados são compartilhados somente com os membros da mesa.'} <span>·</span> Relicário v1.0</div>
+          <div className="footer-note"><ShieldCheck size={15}/> {isDemo ? 'Modo de teste: alterações salvas apenas neste navegador.' : 'Os dados são compartilhados somente com os membros da mesa.'} <span>·</span> Relicário v1.1</div>
         </>}
       </main>
     </div>
@@ -256,6 +260,7 @@ function App() {
     {modal?.type === 'joinMesa' && <JoinModal busy={busy} onClose={()=>setModal(null)} onSubmit={code=>perform(async()=>{const id=await api.joinMesa(code);await reloadMesas(id)},'Bem-vindo à mesa!')} />}
     {modal?.type === 'createBag' && <BagModal busy={busy} onClose={()=>setModal(null)} onSubmit={(name,kind)=>perform(async()=>{const bag=await api.createBag(mesaId,name,kind,user.id);await reloadBags(mesaId,bag.id)},'Bolsa criada!')} />}
     {modal?.type === 'item' && <ItemModal busy={busy} item={modal.item} onClose={()=>setModal(null)} onSubmit={data=>perform(async()=>{await api.saveItem({...data,id:modal.item?.id,bag_id:bagId});await reloadBagData(bagId)}, modal.item?'Item atualizado.':'Item adicionado.')} />}
+    {modal?.type === 'transfer' && <TransferModal key={modal.item.id} busy={busy} item={modal.item} sourceBag={modal.sourceBag} targets={modal.targets} onClose={()=>setModal(null)} onSubmit={(targetId,quantity)=>perform(async()=>{await api.transferItem(modal.item.id,targetId,quantity);await reloadBagData(modal.sourceBag.id)},'Item transferido com sucesso!')} />}
     {modal?.type === 'coins' && <CoinsModal busy={busy} coin={modal.coin} onClose={()=>setModal(null)} onSubmit={(delta,note)=>perform(async()=>{await api.adjustCoins(bagId,modal.coin,delta,note);await reloadBagData(bagId)},'Carteira atualizada!')} />}
   </div>
 }
@@ -275,6 +280,22 @@ function BagModal({busy,onClose,onSubmit}) {
 function ItemModal({busy,item,onClose,onSubmit}) {
   const [name,setName]=useState(item?.name||''),[category,setCategory]=useState(item?.category||'Equipamentos'),[quantity,setQuantity]=useState(item?.quantity||1),[value,setValue]=useState(item?.value_po??0),[notes,setNotes]=useState(item?.notes||'')
   return <Modal title={item?'Editar item':'Adicionar item'} subtitle="Guarde os detalhes desta descoberta." onClose={onClose}><form className="stack-form" onSubmit={e=>{e.preventDefault();onSubmit({name:name.trim(),category,quantity:Number(quantity),value_po:Number(value),notes:notes.trim()})}}><label>Nome do item<input autoFocus maxLength={120} value={name} onChange={e=>setName(e.target.value)} placeholder="Ex.: Adaga de prata" required /></label><div className="form-row"><label>Categoria<select value={category} onChange={e=>setCategory(e.target.value)}>{CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}</select></label><label>Quantidade<input type="number" min={1} max={1000000} step={1} value={quantity} onChange={e=>setQuantity(e.target.value)} required/></label></div><label>Valor estimado por unidade (PO)<input type="number" min={0} max={9999999999} step="0.01" value={value} onChange={e=>setValue(e.target.value)} required/></label><label>Descrição / observações<textarea rows={3} maxLength={2000} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Origem, efeitos, propriedades, anotações..."/></label><div className="form-actions"><button type="button" className="btn btn-outline" onClick={onClose}>Cancelar</button><button className="btn btn-primary" disabled={busy}>{busy?'Salvando...':item?'Salvar alterações':'Guardar item'} <Check size={16}/></button></div></form></Modal>
+}
+function TransferModal({ busy, item, sourceBag, targets, onClose, onSubmit }) {
+  const [targetId, setTargetId] = useState(targets[0]?.id || '')
+  const [quantity, setQuantity] = useState(item.quantity)
+  const amount = Number(quantity)
+  const valid = !!targetId && Number.isInteger(amount) && amount >= 1 && amount <= item.quantity
+  const target = targets.find(b => b.id === targetId)
+  return <Modal title="Transferir item" subtitle="Transfira parte ou toda a pilha, sem perder itens." onClose={onClose}>
+    <form className="stack-form" onSubmit={e=>{e.preventDefault();if(valid)onSubmit(targetId,amount)}}>
+      <div className="transfer-summary"><ArrowLeftRight size={21}/><div><strong>{item.name}</strong><span>{sourceBag.name} · Disponível: {formatNum(item.quantity)}</span></div></div>
+      <label>Bolsa de destino<select value={targetId} onChange={e=>setTargetId(e.target.value)} required>{targets.map(b=><option key={b.id} value={b.id}>{b.name} ({b.kind === 'grupo' ? 'Grupo' : 'Personagem'})</option>)}</select></label>
+      <label>Quantidade a transferir<input type="number" min={1} max={item.quantity} step={1} value={quantity} onChange={e=>setQuantity(e.target.value)} required/></label>
+      <div className="modal-hint"><Package size={17}/><span>{valid ? `${formatNum(amount)} de ${formatNum(item.quantity)} unidade(s) irão para ${target?.name}. ${amount === item.quantity ? 'O item sairá por completo da bolsa de origem.' : `${formatNum(item.quantity - amount)} permanecerá(ão) na origem.`}` : 'Escolha uma quantidade válida, sem ultrapassar o estoque.'}</span></div>
+      <div className="form-actions"><button type="button" className="btn btn-outline" onClick={onClose} disabled={busy}>Cancelar</button><button className="btn btn-primary" disabled={busy || !valid}>{busy?'Transferindo...':'Confirmar transferência'} <ArrowLeftRight size={16}/></button></div>
+    </form>
+  </Modal>
 }
 function CoinsModal({busy,coin,onClose,onSubmit}) {
   const [mode,setMode]=useState('add'),[amount,setAmount]=useState(1),[note,setNote]=useState('')
