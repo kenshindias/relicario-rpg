@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { sheetPayload } from '../characterRules.js'
 
 const URL = import.meta.env.VITE_SUPABASE_URL
 const KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
@@ -77,7 +78,7 @@ export const api = {
       db.bags = db.bags.filter(b => b.mesa_id !== id)
       db.items = db.items.filter(i => !ids.includes(i.bag_id))
       db.moves = db.moves.filter(i => !ids.includes(i.bag_id))
-      ids.forEach(x => delete db.coins[x])
+      ids.forEach(x => { delete db.coins[x]; if (db.characterSheets) delete db.characterSheets[x] })
     })
     return unwrap(await supabase.from('mesas').delete().eq('id', id))
   },
@@ -101,6 +102,7 @@ export const api = {
       db.items = db.items.filter(i => i.bag_id !== id)
       db.moves = db.moves.filter(i => i.bag_id !== id)
       delete db.coins[id]
+      if (db.characterSheets) delete db.characterSheets[id]
     })
     return unwrap(await supabase.from('bags').delete().eq('id', id))
   },
@@ -144,6 +146,31 @@ export const api = {
       return true
     })
     return unwrap(await supabase.rpc('transfer_item', { p_item_id: itemId, p_target_bag_id: targetBagId, p_quantity: Number(quantity) }))
+  },
+  async getCharacterSheet(bagId) {
+    if (isDemo) return (getDemo().characterSheets || {})[bagId] || null
+    return unwrap(await supabase.from('character_sheets').select('*').eq('bag_id', bagId).maybeSingle())
+  },
+  async saveCharacterSheet(sheet) {
+    const payload=sheetPayload(sheet)
+    if (isDemo) return mutate(db => {
+      const bag=db.bags.find(b=>b.id===payload.bag_id)
+      if (!bag || bag.kind !== 'personagem') throw new Error('A ficha só pode pertencer a uma mochila de personagem.')
+      db.characterSheets ||= {}
+      db.characterSheets[payload.bag_id]={...payload,updated_at:when()}
+      return db.characterSheets[payload.bag_id]
+    })
+    return unwrap(await supabase.from('character_sheets').upsert(payload,{onConflict:'bag_id'}).select().single())
+  },
+  async adjustCharacterHp(bagId,delta) {
+    if (isDemo) return mutate(db=>{
+      const sheet=db.characterSheets?.[bagId]
+      if(!sheet) throw new Error('Crie a ficha primeiro.')
+      sheet.hp_current=Math.min(sheet.hp_max,Math.max(0,sheet.hp_current+delta))
+      sheet.updated_at=when()
+      return sheet.hp_current
+    })
+    return unwrap(await supabase.rpc('adjust_character_hp',{p_bag_id:bagId,p_delta:delta}))
   },
   async getCoins(bagId) {
     if (isDemo) return getDemo().coins[bagId] || { bag_id: bagId, pc: 0, pp: 0, pe: 0, po: 0, pl: 0 }

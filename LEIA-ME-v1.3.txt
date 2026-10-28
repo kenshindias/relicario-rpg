@@ -1,0 +1,50 @@
+RELICÁRIO v1.3 — FICHA DE PERSONAGEM VINCULADA À MOCHILA
+
+ATUALIZANDO SEU SITE JÁ EXISTENTE (GitHub Pages + Supabase)
+
+PASSO 1 - BANCO (Supabase):
+  Abra SQL Editor > New query.
+  Abra e copie o conteúdo de supabase/ATUALIZACAO_FICHA_v1.3.sql.
+  Cole e clique em Run. Esse arquivo NÃO contém DROP TABLE, TRUNCATE
+  nem DELETE em registros existentes. Ele adiciona uma tabela e uma função.
+  Não execute schema.sql novamente.
+
+PASSO 2 - CÓDIGO (seu repositório clonado no VS Code):
+  Copie SUBSTITUINDO:
+    src/App.jsx
+    src/lib/data.js
+    src/styles.css
+  Copie os DOIS NOVOS arquivos:
+    src/CharacterSheet.jsx
+    src/characterRules.js
+  Opcional: atualize package.json para mostrar versão 1.3.0.
+  Não apague sua pasta .github, nem substitua o arquivo .env.
+
+PASSO 3 - TESTAR NO SEU PC:
+  Terminal do VS Code, na raiz: npm install; npm run dev
+  Para usar o banco real no computador configure seu .env local com
+  VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY.
+  Depois execute: npm run build
+
+PASSO 4 - PUBLICAR:
+  Use Source Control no VS Code: Stage (+) > Commit > Sync Changes.
+  Confira GitHub > Actions e o site.
+
+COMO USAR
+  Abra a mesa > selecione bolsa de personagem > aba Ficha.
+  Clique em Criar ficha. Depois, Edite os dados.
+  Bônus de atributos, proficiência, resistências, perícias e
+  Percepção Passiva são automáticos.
+  Use os botões -1/+1 PV quando necessário (sem conflito no Supabase).
+  Mochila, moedas e grimório continuam vinculados à MESMA bolsa.
+
+OBSERVAÇÕES
+  - O baú compartilhado não tem ficha, somente mochilas de personagem.
+  - Só o mestre ou dono da mochila altera a ficha; outros membros leem.
+  - Não há importação de fichas de D&D Beyond, rolagem automática de dados,
+    nem regras automáticas de nível/classe/equipamento nesta primeira versão.
+  - A CA e os PV máximos são definidos manualmente para aceitar regras de
+    diferentes classes, itens e versões de D&D 5e.
+  - Antes de instalar, faça backup do Supabase se houver dados críticos.
+  - O ABRA-PARA-TESTAR.html que existe no pacote completo é a demonstração
+    ANTIGA: a ficha nova está na versão React, não no HTML offline.
