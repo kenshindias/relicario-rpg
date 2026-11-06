@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BookMarked, Check, ChevronDown, CirclePlus, Heart, Pencil, Shield, Sparkles, Swords, Wallet } from 'lucide-react'
 import { ABILITIES, SKILLS, mod, signed, proficiency, skillBonus, passivePerception, defaultSheet } from './characterRules'
+import CharacterCreationWizard from './CharacterCreationWizard.jsx'
 
 const MODES = [{value:'none',label:'Sem proficiência'},{value:'proficient',label:'Proficiente'},{value:'expertise',label:'Especialista (2×)'}]
 const chunk = (text) => (text||'').trim()
@@ -64,7 +65,13 @@ export default function CharacterSheet({sheet,bag,canEdit,busy,loading,onSave,on
   const [editing,setEditing]=useState(false)
   if(loading) return <div className="character-empty"><Shield size={35}/><h3>Carregando ficha...</h3></div>
   if(!sheet && !canEdit) return <div className="character-empty"><Shield size={38}/><h3>Ficha ainda não criada</h3><p>O dono da mochila ou o mestre poderá criar esta ficha.</p></div>
-  if(!sheet) return <div className="character-empty"><Shield size={43}/><h3>Seu herói merece uma ficha</h3><p>Crie uma ficha vinculada a esta mochila. Seus itens e seu grimório continuarão intactos.</p><button className="btn btn-primary" disabled={busy} onClick={()=>onSave(defaultSheet(bag.id,bag.name.replace(/^Bolsa de\s+/i,'')))}><CirclePlus size={18}/>{busy?'Criando...':'Criar ficha do personagem'}</button></div>
+ if(!sheet) return (
+  <CharacterCreationWizard
+    bag={bag}
+    busy={busy}
+    onSave={onSave}
+  />
+)
   if(editing) return <Editor key={sheet.bag_id+sheet.updated_at} sheet={sheet} busy={busy} onSave={async s=>{const ok=await onSave(s);if(ok)setEditing(false)}} onCancel={()=>setEditing(false)} />
   const prof=proficiency(sheet)
   const saves=sheet.save_proficiencies||{}
